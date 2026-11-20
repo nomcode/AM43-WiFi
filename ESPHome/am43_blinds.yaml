@@ -49,8 +49,8 @@ cover:
     name: Cover
     id: blind_cover
     device_class: shade
-    # Enable only after verifying the active-low motor reset connection.
-    # reset_pin: GPIO5
+    # Active-low motor MCU reset on the confirmed ESP-12F wiring.
+    reset_pin: GPIO5
     reported_position:
       name: Motor-reported position
       id: motor_reported_position

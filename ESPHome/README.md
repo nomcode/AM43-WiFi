@@ -6,7 +6,7 @@ This external component runs on the ESP-12F wired directly to the AM43 motor con
 
 1. Check out the migration branch. Keep `ESPHome/am43_blinds.yaml` and `components/am43_uart/` in their repository locations so the example can find the local external component.
 2. Copy `ESPHome/secrets.example.yaml` to `ESPHome/secrets.yaml`. Fill in the Wi-Fi and web credentials. Generate the API key with `openssl rand -base64 32`. Encrypted ESPHome OTA uses the same key.
-3. Keep the existing ESP-12F connections. ESP GPIO1 (TX) goes to the motor controller RX, ESP GPIO3 (RX) to motor TX, with a common ground. The bus is 19200 baud, 8N1. ESPHome uses the `esp12e` board profile for the ESP-12F. Leave `reset_pin` omitted until the reset wiring has been checked.
+3. Keep the existing ESP-12F connections. ESP GPIO1 (TX) goes to the motor controller RX, ESP GPIO3 (RX) to motor TX, with a common ground. The bus is 19200 baud, 8N1. ESPHome uses the `esp12e` board profile for the ESP-12F. The example enables GPIO5 for the confirmed motor reset connection.
 4. Run the following from the repository root.
 
    ```sh
@@ -24,7 +24,7 @@ The standard ESPHome cover can show its default value when first connected befor
 
 ### Reset wiring
 
-With power removed, check the wiring and continuity from the candidate ESP GPIO to the motor controller’s reset pad using the board documentation and upstream photos. GPIO5 is the upstream choice. This unit’s reset connection has not been verified. Confirm the line is compatible with a 3.3 V ESP pin and resets when pulled low before setting `reset_pin: GPIO5` (or the verified GPIO). The firmware leaves the pin high impedance, pulses it low for 100 ms after five minutes without a valid known motor response, then releases it and resumes polling. Commands during reset and the brief settling interval are discarded. The upstream author observed that the controller can move toward the upper limit after reset. Keep the area clear when testing recovery.
+GPIO5 is wired to the motor controller’s active-low reset on this installation. For other installations, set `reset_pin` to the GPIO verified against the motor reset pad, or omit it on boards without a reset connection. The firmware leaves the pin high impedance, pulses it low for 100 ms after five minutes without a valid known motor response, then releases it and resumes polling. Commands during reset and the brief settling interval are discarded. The upstream author observed that the controller can move toward the upper limit after reset. Keep the area clear when testing recovery.
 
 ### Set the physical travel limits
 
@@ -38,7 +38,7 @@ Use the procedure for your AM43 hardware revision. On the unit documented upstre
 | Replies | Both delay 100 ms per byte, append without a buffer bound, and read the declared checksum offset without first checking for a full frame. | A bounded streaming parser keeps partial frames across loops, checks the complete frame XOR, discards incomplete frames after an idle gap, and preserves valid frames that arrive back to back. |
 | Polling | Both request `0xA7` but wait for `0xA9` to begin the light/battery polls. The original code decodes `0xA7` as settings and `0xA9` as season data. | Valid `0xA7` advances to light (`0xAA`), then battery (`0xA2`). Each request has a timeout so a missing reply cannot starve the others. Command-triggered refresh and faster polling feed back positions during travel. |
 | Command outcome | Sending or accepting a request can be mistaken for physical movement. | Checksummed position replies drive state. Verification frames are logged separately, and a target still unconfirmed after 60 seconds produces a network warning. |
-| Recovery | Both hard-code GPIO5 and refresh the watchdog on a header before checking the frame. | Only recognized, well-formed replies refresh the watchdog. Reset GPIO is opt-in and the pulse uses loop timing. Commands are never replayed automatically. |
+| Recovery | Both hard-code GPIO5 and refresh the watchdog on a header before checking the frame. | Only recognized, well-formed replies refresh the watchdog. The reset GPIO is configurable and the pulse uses loop timing. Commands are never replayed automatically. |
 
 The comparison establishes the code paths and their consequences. UART captures are still needed to confirm how this motor firmware orders `0xA7`, optional `0xA9`, `0xA1`, and verification replies. If light feedback is missing, check the `0xAA` request and reply in the logs and verify the sensor wiring. The [original light report](https://github.com/Smoria/AM43-WiFi/issues/2) was traced to wiring.
 
@@ -55,10 +55,10 @@ g++ -std=c++17 -Wall -Wextra -Werror -fsanitize=address,undefined \
 | Check | Result |
 | --- | --- |
 | Host protocol test, GCC with AddressSanitizer and UndefinedBehaviorSanitizer | Passed |
-| ESPHome 2026.11.0, `esp12e`, example with reset disabled | Compiled. Flash 476,812 bytes (45.7%), RAM 31,476 bytes (38.4%). |
-| ESPHome 2026.11.0, `esp12e`, example variant with `reset_pin: GPIO5` | Compiled. Flash 476,848 bytes (45.7%), RAM 31,488 bytes (38.4%). |
+| ESPHome 2026.11.0, `esp12e`, variant with reset disabled | Compiled. Flash 476,812 bytes (45.7%), RAM 31,476 bytes (38.4%). |
+| ESPHome 2026.11.0, `esp12e`, example with `reset_pin: GPIO5` | Compiled. Flash 476,844 bytes (45.7%), RAM 31,484 bytes (38.4%). |
 
-Physical travel, motor serial replies, the reset line, and end-to-end operation through Home Assistant and the webpage require bench testing.
+Physical travel, motor serial replies, reset recovery with the new firmware, and end-to-end operation through Home Assistant and the webpage require bench testing.
 
 ### Hardware test
 
