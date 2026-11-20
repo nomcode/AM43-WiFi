@@ -1,7 +1,7 @@
 # AM43-WiFi
-This project changes chinese AM43 blinds engine (like on image below) controls from BLE to WiFi MQTT using ESP8266 modules such as ESP-01 or ESP-12F
+AM43-WiFi replaces the AM43 blind motor’s Bluetooth module with an ESP8266, such as an ESP-12F or ESP-01, wired to the motor controller’s serial port.
 
-**Now with ESPHome version available**
+**ESPHome version available with the native Home Assistant API and a device-hosted web interface.**
 
 *This is not same as AM43 cover component which is just WiFi<->BLE bridge, this is hardware conversion with removal of BLE module*
 
@@ -28,12 +28,11 @@ Only problem I have noticed after modification that AM43 MCU hangs after couple 
 - Automatically resets blinds MCU if there is no response for some time (5 minutes)
 
 # Features (ESPHome version)
-- Control over component trough ESPHome configuration
-- Accepts position input (0%-100%)
-- Position tracking
-- Battery level tracking
-- Light level tracking
-- Automatically resets blinds MCU if there is no response for some time (5 minutes)
+- Open, close, stop and percentage control through Home Assistant and the device webpage
+- Motor-reported position, battery and light readings
+- Read-only direction, operating mode, speed and limit-set flags
+- Optional motor-controller reset after five minutes without a valid reply
+- Network logs for commands, responses and timeouts
 
 # Installation
 ### Firmware (Arduino MQTT version)
@@ -49,7 +48,7 @@ Only problem I have noticed after modification that AM43 MCU hangs after couple 
 5. Change WiFi and MQTT settings.
 6. Firmware part is done.
 ### Firmware (ESPHome version)
-Follow default ESPHome instalation procedure using provided config file.
+See the [ESPHome installation and hardware test guide](ESPHome/README.md). The UART component is based on Vladyslav Smorodskyi’s original AM43-WiFi implementation and is distributed under the repository’s [licence](LICENSE).
 ### Hardware
 1. Disassemble device
 ![Mainboard with BLE module](images/ble.jpg)
